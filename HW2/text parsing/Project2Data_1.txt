@@ -1,0 +1,25 @@
+﻿123
+Id:   1
+ASIN: 0827229534
+  title: Patterns of Preaching: A Sermon Sampler
+  group: Book 
+  categories: 2
+   |Books[283155]|Subjects[1000]|Religion & Spirituality[22]|Christianity[12290]|Clergy[12360]|Preaching[12368]
+   |Books[283155]|Subjects[1000]|Religion & Spirituality[22]|Christianity[12290]|Clergy[12360]|Sermons[12370]
+ 
+
+Id:   2
+ASIN: 0738700797
+  title: Candlemas: Feast of Flames
+  group: Book 
+  categories: 2
+   |Books[283155]|Subjects[1000]|Religion & Spirituality[22]|Earth-Based Religions[12472]|Wicca[12484]
+   |Books[283155]|Subjects[1000]|Religion & Spirituality[22]|Earth-Based Religions[12472]|Witchcraft[12486]
+ 
+
+Id:   3
+ASIN: 0486287785
+  title: World War II Allied Fighter Planes Trading Cards
+  group: Book  
+  categories: 1
+   |Books[283155]|Subjects[1000]|Home & Garden[48]|Crafts & Hobbies[5126]|General[5144]
