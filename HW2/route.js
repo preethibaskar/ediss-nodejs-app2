@@ -221,10 +221,50 @@ var notFound404 = function(req, res, next) {
 	 res.render('404', {title: '404 Not Found'});
 };
 var getProducts = function(req, res, next){
-
+	var query = "SELECT distinct p.* FROM product p INNER JOIN product_category_mapping c ON p.product_id = c.product_id WHERE p.product_id = "+req.query.productId+" OR category LIKE '"+req.query.category+"' OR (title LIKE '"+req.query.keyword+"' OR description LIKE '"+req.query.keyword+"')";
+        connection.query(query,function(err,rows){
+        	console.log(query);
+            if(err) {
+            	console.log(query);
+                res.json({
+                	// "Error" : true, 
+                	"errMessage" : "Database connection error!"
+                });
+            } else if(rows.length==0){
+                res.json({
+                	"errMessage" : "No such product!"
+   			 	});
+            }
+            else if(rows.length>0){
+                var output = JSON.stringify(rows);
+                res.json({
+	            	"product_list":output    	
+	            });
+            }
+        });
+    	// }
 };
 var modifyProduct = function(req, res, next){
-
+ var mess;
+       // if(req.session.userType=="admin") {
+            var query = "UPDATE product set title= '"+req.query.productTitle+"', description ='"+req.query.productDescription+"' WHERE product_id='"+req.query.productId+"'";
+            connection.query(query,function(err,rows){
+                console.log(query);
+                if(err)
+                    res.json({
+                        "message":"There was a problem with this action!"       
+                    });
+                else
+                    res.json({
+                        "message":"The product information has been updated!"       
+                    });
+            }); 
+       // }
+        // else {
+        //     res.json({
+        //                 "message":"There was a problem with this action!"       
+        //     });
+        // }
 };
 // export functions
 /**************************************/
