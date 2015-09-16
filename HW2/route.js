@@ -118,8 +118,10 @@ var signInPost = function(req, res, next) {
 				 if(err) {
 						res.json({ errorMessage: info.message});
 				 } else {
-						 console.log("login");
+				 	console.log("right here");
+						 console.log(user.usertype);
 						 req.session.username = user.username;
+						 req.session.usertype = user.usertype;
 						 res.json({ sessionID: req.sessionID, menu: " Update Contact Information, Log out" });
 				 }
 			});
@@ -141,11 +143,18 @@ var signUp = function(req, res, next) {
 var signUpPost = function(req, res, next) {
 	 var user = req.query;
 	 var usernamePromise = null;
-	 usernamePromise = new Model.User({uName: user.username}).fetch();
+	 if(user.uName == undefined || user.lName == undefined || user.state == undefined || 
+	 	user.zip == undefined || user.pWord == undefined || user.fName == undefined || user.address == undefined||
+	 	user.city == undefined || user.email == undefined){
+	 	res.json({message : "There was a problem with your registration." });
+	 }
+	 usernamePromise = new Model.User({uName: user.uName}).fetch();
 
 	 return usernamePromise.then(function(model) {
+	 	var reg = /^\d+$/;
 	 	var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
-	 		if(!pattern.test( user.email )){
+
+	 		if(!pattern.test( user.email ) || user.state.length > 2 || user.zip.length > 5 || !(reg.test(user.zip)) ){
 	 			res.json({ message: "There was a problem with your registration." });
 	 		}
 			if(model) {
@@ -154,12 +163,12 @@ var signUpPost = function(req, res, next) {
 				 //****************************************************//
 				 // MORE VALIDATION GOES HERE(E.G. PASSWORD VALIDATION)
 				 //****************************************************//
-				 var password = user.password;
+				 var password = user.pWord;
 				 //var hash = bcrypt.hashSync(password);
 
-				 var signUpUser = new Model.User({uName: user.username, pWord: user.password, fName: user.fName, lName: user.lName,
+				 var signUpUser = new Model.User({uName: user.uName, pWord: user.pWord, fName: user.fName, lName: user.lName,
 																					address: user.address, city:user.city, state: user.state,email:user.email, 
-																					zip:user.zip });
+																					zip:user.zip, usertype:user.usertype });
 
 				 signUpUser.save().then(function(model) {
 					res.json({ message:"Your account has been registered"});
@@ -171,6 +180,11 @@ var signUpPost = function(req, res, next) {
 	 });
 };
 var viewUsers = function(req,res,next){
+	if(!req.isAuthenticated() || req.session.usertype != "admin"){
+				res.json({ message: "You are not logged in as admin!" });
+			
+	 }
+	 else{
 	        var query = "SELECT * FROM ?? WHERE ?? LIKE ? AND ?? LIKE ?";
         var table = [
 	        "tblUsers",
@@ -200,6 +214,7 @@ var viewUsers = function(req,res,next){
 	            });
             }
         });
+    }
 	// }
 }
 // sign out
@@ -245,6 +260,11 @@ var getProducts = function(req, res, next){
     	// }
 };
 var modifyProduct = function(req, res, next){
+	if(!req.isAuthenticated() || req.session.usertype != "admin"){
+				res.json({ message: "You are not logged in as admin!" });
+			
+	 }
+	 else{
  var mess;
        // if(req.session.userType=="admin") {
             var query = "UPDATE product set title= '"+req.query.productTitle+"', description ='"+req.query.productDescription+"' WHERE product_id='"+req.query.productId+"'";
@@ -259,6 +279,7 @@ var modifyProduct = function(req, res, next){
                         "message":"The product information has been updated!"       
                     });
             }); 
+        }
        // }
         // else {
         //     res.json({

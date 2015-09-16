@@ -9,6 +9,8 @@ var path = require('path');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
+
+
 // custom libraries
 // routes
 var route = require('./route');
@@ -16,6 +18,11 @@ var route = require('./route');
 var Model = require('./model');
 
 var app = express();
+// configure the app to use bodyParser()
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+app.use(bodyParser.json());
 var sess;
 // var session = require('express-session');
 //  app.use(session({
