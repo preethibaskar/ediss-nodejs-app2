@@ -122,7 +122,13 @@ var signInPost = function(req, res, next) {
 						 console.log(user.usertype);
 						 req.session.username = user.username;
 						 req.session.usertype = user.usertype;
-						 res.json({ sessionID: req.sessionID, menu: " Update Contact Information, Log out" });
+						 if(req.session.usertype == "admin"){
+						 	var menu_items = "View products, View users, modify products, log out, update contact information";
+						 }
+						 else{
+						 	var menu_items = "View products, Update Contact Information, Log out";
+						 }
+						 res.json({ sessionID: req.sessionID, menu: menu_items});
 				 }
 			});
 	 })(req, res, next);
@@ -141,7 +147,7 @@ var signUp = function(req, res, next) {
 // sign up
 // POST
 var signUpPost = function(req, res, next) {
-	 var user = req.query;
+	 var user = req.body;
 	 var usernamePromise = null;
 	 if(user.uName == undefined || user.lName == undefined || user.state == undefined || 
 	 	user.zip == undefined || user.pWord == undefined || user.fName == undefined || user.address == undefined||
@@ -155,7 +161,7 @@ var signUpPost = function(req, res, next) {
 	 	var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
 
 	 		if(!pattern.test( user.email ) || user.state.length > 2 || user.zip.length > 5 || !(reg.test(user.zip)) ){
-	 			res.json({ message: "There was a problem with your registration." });
+	 			res.json({ message: "There was a problem with your registration --- email." });
 	 		}
 			if(model) {
 				res.json({ message: "There was a problem with your registration. Username already exists" });
@@ -184,8 +190,13 @@ var viewUsers = function(req,res,next){
 				res.json({ message: "You are not logged in as admin!" });
 			
 	 }
+
 	 else{
-	        var query = "SELECT * FROM ?? WHERE ?? LIKE ? AND ?? LIKE ?";
+	 	 if(req.query.fName == undefined && req.query.lName == undefined){
+	 	var query = "SELECT * from tblUsers";
+	 }else{
+	        var query = "SELECT * FROM ?? WHERE ?? LIKE ? OR ?? LIKE ?";
+	 
         var table = [
 	        "tblUsers",
 	        "fName",
@@ -194,6 +205,7 @@ var viewUsers = function(req,res,next){
 	        "%"+req.query.lName+"%"
         ];
         query = mysql.format(query,table);
+    }
         connection.query(query,function(err,rows){
         	console.log(query);
             if(err) {
@@ -236,8 +248,13 @@ var notFound404 = function(req, res, next) {
 	 res.render('404', {title: '404 Not Found'});
 };
 var getProducts = function(req, res, next){
+	if(req.query == undefined && req.query.category == undefined && req.query.keyword == undefined){
+		var query = "select * from product inner join product_category_mapping";
+	}
+	else{
 	var query = "SELECT distinct p.* FROM product p INNER JOIN product_category_mapping c ON p.product_id = c.product_id WHERE p.product_id = "+req.query.productId+" OR category LIKE '"+req.query.category+"' OR (title LIKE '"+req.query.keyword+"' OR description LIKE '"+req.query.keyword+"')";
-        connection.query(query,function(err,rows){
+       } 
+       connection.query(query,function(err,rows){
         	console.log(query);
             if(err) {
             	console.log(query);
