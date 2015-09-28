@@ -6,10 +6,10 @@ var mysql      = require('mysql');
 // model
 var Model = require('./model');
 var connection = mysql.createConnection({
-	 host     : 'localhost',
-	 user     : 'root',
-	 password : 'root',
-	 database : 'dbUsers'
+	 host     : 'ediss.ckhbt5h3z4bl.us-east-1.rds.amazonaws.com',
+	 user     : 'preethiaws',
+	 password : 'preethiaws',
+	 database : 'ediss'
  });
  
 
@@ -60,7 +60,7 @@ var updateInfoPost = function(req,res,next){
 				 
 				 
 				 //connection.query('UPDATE tblUsers SET fName = ? WHERE userId = ?', [user.fName, user.userId]);
-				 connection.query('UPDATE tblUsers SET ? where userId = ? ', [req.query, user.userId], function (err, result) {
+				 connection.query('UPDATE tblUsers SET ? where userId = ? ', [req.body, user.userId], function (err, result) {
 	if(!err){
 		console.log("Response recorded");
 	 res.json({ message: "Your information has been updated" });
@@ -71,7 +71,7 @@ var updateInfoPost = function(req,res,next){
 		//res.end();
 	}
 	else{
-		console.log("Error!");
+		console.log("There was a problem with this action");
 	}
 	res.end();
 });
@@ -154,6 +154,7 @@ var signUpPost = function(req, res, next) {
 	 	user.city == undefined || user.email == undefined){
 	 	res.json({message : "There was a problem with your registration." });
 	 }
+         else{
 	 usernamePromise = new Model.User({uName: user.uName}).fetch();
 
 	 return usernamePromise.then(function(model) {
@@ -161,9 +162,9 @@ var signUpPost = function(req, res, next) {
 	 	var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
 
 	 		if(!pattern.test( user.email ) || user.state.length > 2 || user.zip.length > 5 || !(reg.test(user.zip)) ){
-	 			res.json({ message: "There was a problem with your registration --- email." });
+	 			res.json({ message: "There was a problem with your registration." });
 	 		}
-			if(model) {
+			else if(model) {
 				res.json({ message: "There was a problem with your registration. Username already exists" });
 			} else {
 				 //****************************************************//
@@ -184,6 +185,7 @@ var signUpPost = function(req, res, next) {
 				 });	
 			}
 	 });
+        }
 };
 var viewUsers = function(req,res,next){
 	if(!req.isAuthenticated() || req.session.usertype != "admin"){
@@ -248,7 +250,7 @@ var notFound404 = function(req, res, next) {
 	 res.render('404', {title: '404 Not Found'});
 };
 var getProducts = function(req, res, next){
-	if(req.query == undefined && req.query.category == undefined && req.query.keyword == undefined){
+	if(req.query.productId == undefined && req.query.category == undefined && req.query.keyword == undefined){
 		var query = "select * from product inner join product_category_mapping";
 	}
 	else{
@@ -284,7 +286,7 @@ var modifyProduct = function(req, res, next){
 	 else{
  var mess;
        // if(req.session.userType=="admin") {
-            var query = "UPDATE product set title= '"+req.query.productTitle+"', description ='"+req.query.productDescription+"' WHERE product_id='"+req.query.productId+"'";
+            var query = "UPDATE product set title= '"+req.body.productTitle+"', description ='"+req.body.productDescription+"' WHERE product_id='"+req.body.productId+"'";
             connection.query(query,function(err,rows){
                 console.log(query);
                 if(err)
