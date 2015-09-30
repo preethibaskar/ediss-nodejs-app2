@@ -106,8 +106,8 @@ var signInPost = function(req, res, next) {
 													failureRedirect: '/signin'}, function(err, user, info) {
 			if(err) {
 				 //return res.render('signin', {title: 'Sign In', errorMessage: err.message});
-				sess=req.session;
-				console.log(sess.sessionID);
+				//sess=req.session;
+				//console.log(sess.sessionID);
 				res.json({ sessionID: sess.sessionID, menu: " Update Contact Information, Log out" })
 			} 
 
@@ -118,10 +118,28 @@ var signInPost = function(req, res, next) {
 				 if(err) {
 						res.json({ errorMessage: info.message});
 				 } else {
-				 	console.log("right here");
-						 console.log(user.usertype);
-						 req.session.username = user.username;
+				 	
+						 console.log(user.username);
+
+						 req.session.username = user.uName;
 						 req.session.usertype = user.usertype;
+						  var query = "UPDATE tblUsers set session_id= NULL WHERE session_id='"+req.sessionID+"'";
+						   connection.query(query,function(err,rows){
+						   	if(err){
+						   		 res.json({
+                       			 "message":"There was a problem with this action!"       
+                    			 });
+						   	}
+						   });
+						 var query = "UPDATE tblUsers set session_id= '"+req.sessionID+"' WHERE uName='"+user.uName+"'";
+           				 connection.query(query,function(err,rows){
+               			 console.log(query);
+                		 if(err)
+                   			 res.json({
+                       			 "message":"There was a problem with this action!"       
+                    		});
+               			
+            			 else {
 						 if(req.session.usertype == "admin"){
 						 	var menu_items = "View products, View users, modify products, log out, update contact information";
 						 }
@@ -129,10 +147,14 @@ var signInPost = function(req, res, next) {
 						 	var menu_items = "View products, Update Contact Information, Log out";
 						 }
 						 res.json({ sessionID: req.sessionID, menu: menu_items});
-				 }
+						 }
+						 });
+						 }
+				 
 			});
 	 })(req, res, next);
 };
+
 
 // sign up
 // GET
@@ -237,7 +259,14 @@ var signOut = function(req, res, next) {
 	 if(!req.isAuthenticated()) {
 			res.json({ message: "You are not currently logged in" })
 	 } else {
-			req.session.destroy();
+			
+			 var query = "UPDATE tblUsers set session_id= NULL WHERE session_id='"+req.sessionID+"'";
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 });
+			 req.session.destroy();
 			req.logout();
 			res.json({ message: " You have been logged out" })
 		 // res.redirect('/signin');
