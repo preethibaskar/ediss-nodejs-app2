@@ -2,18 +2,27 @@
 var passport = require('passport');
 var bcrypt = require('bcrypt-nodejs');
 var mysql      = require('mysql');
+var sync = require('sync');
 // custom library
 // model
 var Model = require('./model');
+// var connection = mysql.createConnection({
+// 	 host     : 'ediss.ckhbt5h3z4bl.us-east-1.rds.amazonaws.com',
+// 	 user     : 'preethiaws',
+// 	 password : 'preethiaws',
+// 	 database : 'ediss'
+//  });
 var connection = mysql.createConnection({
-	 host     : 'ediss.ckhbt5h3z4bl.us-east-1.rds.amazonaws.com',
-	 user     : 'preethiaws',
-	 password : 'preethiaws',
-	 database : 'ediss'
+	 host     : 'localhost',
+	 user     : 'root',
+	 password : 'root',
+	 database : 'dbUsers'
  });
- 
+ var activeSession = false;
+ var activeUser = {};
 
  connection.connect();
+
 // index
 var index = function(req, res, next) {
 	 if(!req.isAuthenticated()) {
@@ -42,6 +51,21 @@ var updateInfo = function(req,res,next){
 	 }
 };
 
+var checkActiveSessions = function(req){
+	console.log("checking");
+	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
+	console.log(query);
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 if(rows > 0){
+			 	activeSession = true;
+			 	activeUser = row[0];
+			 }
+			 });
+ return activeSession;
+};
 
 var updateInfoPost = function(req,res,next){
 	if(!req.isAuthenticated()){
@@ -118,12 +142,12 @@ var signInPost = function(req, res, next) {
 				 if(err) {
 						res.json({ errorMessage: info.message});
 				 } else {
-				 	
-						 console.log(user.username);
-
-						 req.session.username = user.uName;
-						 req.session.usertype = user.usertype;
-						  var query = "UPDATE tblUsers set session_id= NULL WHERE session_id='"+req.sessionID+"'";
+				 			console.log("*******");
+						 console.log(req.connection.remoteAddress);
+						 activeUser = user;
+						 req.session.username = activeUser.uName;
+						 req.session.usertype = activeUser.usertype;
+						  var query = "UPDATE tblUsers set session_id= NULL, ip_addr = NULL WHERE ip_addr='"+req.connection.remoteAddress+"'";
 						   connection.query(query,function(err,rows){
 						   	if(err){
 						   		 res.json({
@@ -131,7 +155,7 @@ var signInPost = function(req, res, next) {
                     			 });
 						   	}
 						   });
-						 var query = "UPDATE tblUsers set session_id= '"+req.sessionID+"' WHERE uName='"+user.uName+"'";
+						 var query = "UPDATE tblUsers set session_id= '"+req.sessionID+"' , ip_addr = '"+req.connection.remoteAddress+"' WHERE uName='"+user.uName+"'";
            				 connection.query(query,function(err,rows){
                			 console.log(query);
                 		 if(err)
@@ -140,6 +164,7 @@ var signInPost = function(req, res, next) {
                     		});
                			
             			 else {
+            			 activeSession = true;
 						 if(req.session.usertype == "admin"){
 						 	var menu_items = "View products, View users, modify products, log out, update contact information";
 						 }
@@ -210,7 +235,27 @@ var signUpPost = function(req, res, next) {
         }
 };
 var viewUsers = function(req,res,next){
-	if(!req.isAuthenticated() || req.session.usertype != "admin"){
+	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
+	console.log(query);
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 else{
+			 	if(rows){
+				 	console.log("checking inside");
+			 		activeSession = true;
+			 		activeUser = rows[0];
+	    			console.log(activeUser);
+			    }
+			    viewusers(req,res);
+			 }
+			 });
+};
+
+function viewusers(req,res){
+
+if(!activeSession || activeUser.usertype != "admin"){
 				res.json({ message: "You are not logged in as admin!" });
 			
 	 }
@@ -253,14 +298,42 @@ var viewUsers = function(req,res,next){
     }
 	// }
 }
-// sign out
+
+	// sign out
 var signOut = function(req, res, next) {
 	console.log("here!!00");
-	 if(!req.isAuthenticated()) {
-			res.json({ message: "You are not currently logged in" })
+	//var activeSession = false;
+	
+	
+	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
+	console.log(query);
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 else{
+			 	if(rows.length > 0){
+				 	console.log("checking inside");
+			 		activeSession = true;
+			 		activeUser = rows[0];
+	    			console.log(activeUser);
+			    }
+			    logout(req,res);
+			 }
+			 });
+		
+
+};
+
+function logout(req,res){
+	console.log("in log out");
+
+	if(activeSession == false) {
+			res.json({ message: "You are not currently logged in" });
 	 } else {
-			
-			 var query = "UPDATE tblUsers set session_id= NULL WHERE session_id='"+req.sessionID+"'";
+			activeSession = false;
+			 var query = "UPDATE tblUsers set session_id= NULL, ip_addr = NULL WHERE ip_addr='"+req.connection.remoteAddress+"'";
+			 console.log(query);
 			 connection.query(query,function(err,rows){
 			 if(err){
 				 res.json({"message":"There was a problem with this action!"});
@@ -271,8 +344,7 @@ var signOut = function(req, res, next) {
 			res.json({ message: " You have been logged out" })
 		 // res.redirect('/signin');
 	 }
-};
-
+}
 // 404 not found
 var notFound404 = function(req, res, next) {
 	 res.status(404);
@@ -335,6 +407,8 @@ var modifyProduct = function(req, res, next){
         //     });
         // }
 };
+
+
 // export functions
 /**************************************/
 // index
