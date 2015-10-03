@@ -3,6 +3,7 @@ var passport = require('passport');
 var bcrypt = require('bcrypt-nodejs');
 var mysql      = require('mysql');
 var sync = require('sync');
+var moment = require('moment');
 // custom library
 // model
 var Model = require('./model');
@@ -19,7 +20,7 @@ var connection = mysql.createConnection({
 	 database : 'dbUsers'
  });
  var activeSession = false;
- var activeUser = {};
+ var activeUser = {'usertype':""};
 
  connection.connect();
 
@@ -66,9 +67,26 @@ var checkActiveSessions = function(req){
 			 });
  return activeSession;
 };
-
 var updateInfoPost = function(req,res,next){
-	if(!req.isAuthenticated()){
+	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
+	console.log(query);
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 else{
+			 	if(rows.length > 0){
+				 	console.log("checking inside");
+			 		activeSession = true;
+			 		activeUser = rows[0];
+	    			console.log(activeUser);
+			    }
+			    updateInfoAuthenticated(req,res);
+			 }
+			 });
+}
+var updateInfoAuthenticated = function(req,res){
+	if(!activeSession){
 				res.json({ message: "You are not logged in!" });
 			
 	 }
@@ -196,13 +214,13 @@ var signUp = function(req, res, next) {
 var signUpPost = function(req, res, next) {
 	 var user = req.body;
 	 var usernamePromise = null;
-	 if(user.uName == undefined || user.lName == undefined || user.state == undefined || 
-	 	user.zip == undefined || user.pWord == undefined || user.fName == undefined || user.address == undefined||
-	 	user.city == undefined || user.email == undefined){
+	 if(user.username == undefined || user.lname == undefined || user.state == undefined || 
+	 	user.zip == undefined || user.password == undefined || user.fname == undefined || 
+	 	user.address == undefined|| user.city == undefined || user.email == undefined){
 	 	res.json({message : "There was a problem with your registration." });
 	 }
          else{
-	 usernamePromise = new Model.User({uName: user.uName}).fetch();
+	 usernamePromise = new Model.User({uName: user.username}).fetch();
 
 	 return usernamePromise.then(function(model) {
 	 	var reg = /^\d+$/;
@@ -220,7 +238,7 @@ var signUpPost = function(req, res, next) {
 				 var password = user.pWord;
 				 //var hash = bcrypt.hashSync(password);
 
-				 var signUpUser = new Model.User({uName: user.uName, pWord: user.pWord, fName: user.fName, lName: user.lName,
+				 var signUpUser = new Model.User({uName: user.username, pWord: user.password, fName: user.fname, lName: user.lname,
 																					address: user.address, city:user.city, state: user.state,email:user.email, 
 																					zip:user.zip, usertype:user.usertype });
 
@@ -235,6 +253,8 @@ var signUpPost = function(req, res, next) {
         }
 };
 var viewUsers = function(req,res,next){
+	//var CurrentDate = moment();
+	console.log(moment().format());
 	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
 	console.log(query);
 			 connection.query(query,function(err,rows){
@@ -242,11 +262,17 @@ var viewUsers = function(req,res,next){
 				 res.json({"message":"There was a problem with this action!"});
 						   	}
 			 else{
-			 	if(rows){
+			 	if(rows.length > 0){
 				 	console.log("checking inside");
 			 		activeSession = true;
 			 		activeUser = rows[0];
-	    			console.log(activeUser);
+			 		var startDate = moment(moment().format(), 'YYYY-M-DD HH:mm:ss z')
+					var endDate = moment(rows[0].session_start, 'YYYY-M-DD HH:mm:ss z')
+					var secondsDiff = startDate.diff(endDate, 'minutes')
+					//console.log(startDate);
+					//console.log(endDate);
+					console.log(secondsDiff);
+	    			//console.log(activeUser);
 			    }
 			    viewusers(req,res);
 			 }
@@ -261,7 +287,7 @@ if(!activeSession || activeUser.usertype != "admin"){
 	 }
 
 	 else{
-	 	 if(req.query.fName == undefined && req.query.lName == undefined){
+	 	 if(req.query.fname == undefined && req.query.lname == undefined){
 	 	var query = "SELECT * from tblUsers";
 	 }else{
 	        var query = "SELECT * FROM ?? WHERE ?? LIKE ? OR ?? LIKE ?";
@@ -269,9 +295,9 @@ if(!activeSession || activeUser.usertype != "admin"){
         var table = [
 	        "tblUsers",
 	        "fName",
-	        "%"+req.query.fName+"%",
+	        "%"+req.query.fname+"%",
 	        "lName",
-	        "%"+req.query.lName+"%"
+	        "%"+req.query.lname+"%"
         ];
         query = mysql.format(query,table);
     }
@@ -380,7 +406,25 @@ var getProducts = function(req, res, next){
     	// }
 };
 var modifyProduct = function(req, res, next){
-	if(!req.isAuthenticated() || req.session.usertype != "admin"){
+	var query = "Select * from tblUsers WHERE session_id is not null and ip_addr = '"+req.connection.remoteAddress+"'";
+	console.log(query);
+			 connection.query(query,function(err,rows){
+			 if(err){
+				 res.json({"message":"There was a problem with this action!"});
+						   	}
+			 else{
+			 	if(rows.length > 0){
+				 	console.log("checking inside");
+			 		activeSession = true;
+			 		activeUser = rows[0];
+	    			console.log(activeUser);
+			    }
+			    modifyProductAuthenticated(req,res);
+			 }
+			 });
+}
+var modifyProductAuthenticated = function(req, res, next){
+	if(!activeSession || activeUser.usertype != "admin"){
 				res.json({ message: "You are not logged in as admin!" });
 			
 	 }
