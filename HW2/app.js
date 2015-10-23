@@ -38,12 +38,12 @@ passport.use(new LocalStrategy(function(username, password, done) {
       console.log("Paspsort!");
       if(user === null) {
          console.log("Invalid uname");
-         return done(null, false, {message: 'Invalid username or password'});
+         return done(null, false, {message: 'That username and password combination was not correct'});
       } else {
          user = data.toJSON();
          if(!(password == user.pWord)) {
             console.log("Invalid password");
-            return done(null, false, {message: 'Invalid username or password'});
+            return done(null, false, {message: 'That username and password combination was not correct'});
          } else {
 
             return done(null, user);

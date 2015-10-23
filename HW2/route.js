@@ -98,25 +98,22 @@ var updateInfoAuthenticated = function(req,res){
      console.log(req.query);
 	 return usernamePromise.then(function(model) {
 			if(model) {
-				 console.log("here!!");
-				 
+				 console.log("update info");
+				 var query = "UPDATE tblUsers set fName= '"+req.body.fName+"', email ='"+req.body.email+"' WHERE userId='"+user.userId+"'";
 				 
 				 //connection.query('UPDATE tblUsers SET fName = ? WHERE userId = ?', [user.fName, user.userId]);
-				 connection.query('UPDATE tblUsers SET ? where userId = ? ', [req.body, user.userId], function (err, result) {
-	if(!err){
-		console.log("Response recorded");
-	 res.json({ message: "Your information has been updated" });
+				console.log(query);
+				connection.query(query, function (err, result) {
+				
+				if(!err){
+						console.log("Response recorded");
+						 res.json({ message: "Your information has been updated" });
 
-		//res.redirect(307, '/' + req.path);
-		
-		//res.redirect("/results.htm?ans1="+ans1+"&ans2="+ans2+"&ans3="+ans3+"&feedback="+feedback);
-		//res.end();
-	}
-	else{
-		console.log("There was a problem with this action");
-	}
-	res.end();
-});
+				}
+				else{
+					res.json({ message: "There was a problem with this action!!!" });
+				}
+				});
 				 // usernamePromise.set('lName', user.lName);
 				 // usernamePromise.set('fName', user.fName);
 				 // usernamePromise.save().then(function(model) {
@@ -128,7 +125,7 @@ var updateInfoAuthenticated = function(req,res){
 				 //****************************************************//
 				 // MORE VALIDATION GOES HERE(E.G. PASSWORD VALIDATION)
 				 //****************************************************//
-			 res.json({ message: "There was a problem with this action" });
+			 res.json({ message: "There was a problem with this action!!!" });
 			}
 	 });
 }
@@ -184,10 +181,10 @@ var signInPost = function(req, res, next) {
             			 else {
             			 activeSession = true;
 						 if(req.session.usertype == "admin"){
-						 	var menu_items = "View products, View users, modify products, log out, update contact information";
+						 	var menu_items = "/getProducts, /viewUsers, /modifyProducts, /logOut, /updateInfo";
 						 }
 						 else{
-						 	var menu_items = "View products, Update Contact Information, Log out";
+						 	var menu_items = "/getProducts , /updateInfo, /logout";
 						 }
 						 res.json({ sessionID: req.sessionID, menu: menu_items});
 						 }
@@ -209,49 +206,59 @@ var signUp = function(req, res, next) {
 	 }
 };
 
+var validateRequest = function(user){
+	var valid = true;
+	var reg = /^\d+$/;
+	var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
+	
+	if(user.username == undefined || user.lname == undefined || user.state == undefined || 
+	 	user.zip == undefined || user.password == undefined || user.fname == undefined || 
+	 	user.address == undefined|| user.city == undefined || user.email == undefined){
+	 	valid = false;
+	 }
+	 else if(!pattern.test( user.email ) || user.state.length > 2 || user.zip.length > 5 || !(reg.test(user.zip)) ){
+	 			valid = false;
+	 }
+	 else{
+
+	 	var query = "Select * from tblUsers WHERE (lName= '"+user.lname+"' and fName = '"+user.fname+"') OR (uName = '"+user.username+"' and pWord = '"+user.password+"')";
+		console.log(query);
+		connection.query(query,function(err,rows){
+		if(err){
+			console.log("Error")
+		}else{
+			 if(rows.length > 0){
+			 	valid = false;
+			 	console.log(valid);
+			 }
+
+			 }
+			 });
+			 }
+			 return valid;
+	 }
+
+	 
+
 // sign up
 // POST
 var signUpPost = function(req, res, next) {
 	 var user = req.body;
 	 var usernamePromise = null;
-	 if(user.username == undefined || user.lname == undefined || user.state == undefined || 
-	 	user.zip == undefined || user.password == undefined || user.fname == undefined || 
-	 	user.address == undefined|| user.city == undefined || user.email == undefined){
-	 	res.json({message : "There was a problem with your registration." });
-	 }
-         else{
-	 usernamePromise = new Model.User({uName: user.username}).fetch();
-
-	 return usernamePromise.then(function(model) {
-	 	var reg = /^\d+$/;
-	 	var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
-
-	 		if(!pattern.test( user.email ) || user.state.length > 2 || user.zip.length > 5 || !(reg.test(user.zip)) ){
-	 			res.json({ message: "There was a problem with your registration." });
-	 		}
-			else if(model) {
-				res.json({ message: "There was a problem with your registration. Username already exists" });
-			} else {
-				 //****************************************************//
-				 // MORE VALIDATION GOES HERE(E.G. PASSWORD VALIDATION)
-				 //****************************************************//
-				 var password = user.pWord;
-				 //var hash = bcrypt.hashSync(password);
-
-				 var signUpUser = new Model.User({uName: user.username, pWord: user.password, fName: user.fname, lName: user.lname,
+	 var validated = validateRequest(user);
+	 console.log(validated);
+	 if(validated){
+	 var signUpUser = new Model.User({uName: user.username, pWord: user.password, fName: user.fname, lName: user.lname,
 																					address: user.address, city:user.city, state: user.state,email:user.email, 
 																					zip:user.zip, usertype:user.usertype });
-
-				 signUpUser.save().then(function(model) {
-					res.json({ message:"Your account has been registered"});
-						// console.log("Here!!");
-						// // sign in the newly registered user
-						// signInPost(req, res, next);
-				 });	
-			}
-	 });
-        }
-};
+	 signUpUser.save().then(function(model) {
+				res.json({ message:"Your account has been registered "});
+					
+	 });	
+	 }
+	 
+	};
+        
 var viewUsers = function(req,res,next){
 	//var CurrentDate = moment();
 	console.log(moment().format());
@@ -288,9 +295,9 @@ if(!activeSession || activeUser.usertype != "admin"){
 
 	 else{
 	 	 if(req.query.fname == undefined && req.query.lname == undefined){
-	 	var query = "SELECT * from tblUsers";
+	 	var query = "SELECT fName,lName from tblUsers";
 	 }else{
-	        var query = "SELECT * FROM ?? WHERE ?? LIKE ? OR ?? LIKE ?";
+	        var query = "SELECT fName,lName FROM ?? WHERE ?? LIKE ? OR ?? LIKE ?";
 	 
         var table = [
 	        "tblUsers",
@@ -381,7 +388,7 @@ var getProducts = function(req, res, next){
 		var query = "select * from product inner join product_category_mapping";
 	}
 	else{
-	var query = "SELECT distinct p.* FROM product p INNER JOIN product_category_mapping c ON p.product_id = c.product_id WHERE p.product_id = "+req.query.productId+" OR category LIKE '"+req.query.category+"' OR (title LIKE '"+req.query.keyword+"' OR description LIKE '"+req.query.keyword+"')";
+	var query = "SELECT distinct p.title FROM product p INNER JOIN product_category_mapping c ON p.product_id = c.product_id WHERE p.product_id = "+req.query.productId+" OR category LIKE '"+req.query.category+"' OR (title LIKE '"+req.query.keyword+"' OR description LIKE '"+req.query.keyword+"')";
        } 
        connection.query(query,function(err,rows){
         	console.log(query);
